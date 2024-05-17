@@ -3,5 +3,11 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   typescript: {
     typeCheck: true
+  },
+  runtimeConfig: {
+    public: {
+      secret: process.env.GOOGLE_API_KEY,
+      test: "34"
+    }
   }
 })
