@@ -1,0 +1,18 @@
+org: studentlessor
+app: studentlessor
+service: backend
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  stage: ${opt:stage, 'dev'}
+  runtime: nodejs18.x
+  apiName: backend-${self:provider.stage}
+
+functions:
+  api:
+    handler: index.handler
+    events:
+      - http:
+          path: /
+          method: get
