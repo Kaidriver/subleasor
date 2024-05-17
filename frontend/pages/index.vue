@@ -42,8 +42,6 @@
 
     onMounted(() => {
         const mapsScript = document.createElement("script");
-        console.log(config.public)
-        console.log(`https://maps.googleapis.com/maps/api/js?key=${config.public.secret}&libraries=places`)
         mapsScript.setAttribute(
             "src",
             `https://maps.googleapis.com/maps/api/js?key=${config.public.secret}&libraries=places`

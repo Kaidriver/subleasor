@@ -6,8 +6,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      secret: process.env.GOOGLE_API_KEY,
-      test: "34"
+      secret: process.env.GOOGLE_API_KEY
     }
   }
 })
