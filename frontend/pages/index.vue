@@ -2,15 +2,13 @@
     <h1>hello</h1>
 
     <input type="text" id="pac-input">
-    <ClientOnly>
-        <ol-map id="map" ref="mapRef" :loadTilesWhileAnimating="true" :loadTilesWhileInteracting="true" style="height:400px">
-            <ol-view :center="center" :rotation="rotation" :zoom="zoom"
-            :projection="projection" />
-            <ol-tile-layer>
-                <ol-source-osm />
-            </ol-tile-layer>
-        </ol-map>
-    </ClientOnly>
+    <ol-map id="map" ref="mapRef" :loadTilesWhileAnimating="true" :loadTilesWhileInteracting="true" style="height:400px">
+        <ol-view :center="center" :rotation="rotation" :zoom="zoom"
+        :projection="projection" />
+        <ol-tile-layer>
+            <ol-source-osm />
+        </ol-tile-layer>
+    </ol-map>   
 </template>
 
 <style scoped>
@@ -28,10 +26,9 @@
     import * as olProj from 'ol/proj';
     import VectorLayer from 'ol/layer/Vector.js';
     import VectorSource from 'ol/source/Vector.js';
-
+    import GeoJSON from 'ol/format/GeoJSON.js'; 
     import { ref } from 'vue'
     import type { Extent, Map } from 'openlayers';
-    import type { BaseType } from 'typescript';
 
     const center = ref([40, 40])
     const projection = ref('EPSG:4326')
@@ -39,6 +36,41 @@
     const rotation = ref(0)
     const mapRef = ref<{ map: Map }>();
     const config = useRuntimeConfig()
+
+    async function queryPropertiesFromView(map: Map) {
+        const queryExtent = map.getView().calculateExtent(map.getSize())
+        const queryPolygon = encodeURI("POLYGON((" + queryExtent[0] + " " + queryExtent[1] + ", " 
+                                            + queryExtent[0] + " " + queryExtent[3] + ", " 
+                                            + queryExtent[2] + " " + queryExtent[3] + ", " 
+                                            + queryExtent[2] + " " + queryExtent[1] + ", "
+                                            + queryExtent[0] + " " + queryExtent[1] + "))")
+        
+        const { data, pending, error, refresh } = await useFetch(config.public.dev_endpoint + queryPolygon, {
+            headers: {
+                'x-api-key': config.public.aws_api_key
+            }   
+        })
+        
+
+        let properties = JSON.parse(JSON.stringify(data.value))
+        let featuresList = []
+        for (let i = 0; i < properties.length; i++) {
+            featuresList.push({'type': 'Feature', 'geometry': JSON.parse(properties[i].geojson)})
+        }
+
+        let geojsonObject = {
+            'type': 'FeatureCollection',
+            'crs': {
+                'type': 'name',
+                'properties': {
+                    'name': 'EPSG:3857',
+                }, 
+            },
+            'features': featuresList
+        }
+
+        return new GeoJSON().readFeatures(geojsonObject)
+    }
 
     onMounted(() => {
         const mapsScript = document.createElement("script");
@@ -51,8 +83,21 @@
             'javascript'
         )
         
+        const map: Map = mapRef.value?.map!;
+        var vectorSource1 = new VectorSource();
+
+        var vectorLayer1: VectorLayer<any> = new VectorLayer({
+            source: vectorSource1
+        });
+
+        map.addLayer(vectorLayer1 as any); 
+        map.on("moveend", async function(e){
+            let newFeatures = await queryPropertiesFromView(map)
+            vectorSource1.addFeatures(newFeatures)
+        });
+        
         mapsScript.onload = () => {
-            const map: Map = mapRef.value?.map!;
+            const input = document.getElementById("pac-input") as HTMLInputElement;
             const centerPos = { lat: 50.064192, lng: -130.605469 };
             // Create a bounding box with sides ~10km away from the center point
             const defaultBounds = {
@@ -61,8 +106,7 @@
                 east: centerPos.lng + 0.1,
                 west: centerPos.lng - 0.1,
             };
-
-            const input = document.getElementById("pac-input") as HTMLInputElement;
+        
             const options = {
                 bounds: defaultBounds,
                 componentRestrictions: { country: "us" },
@@ -73,7 +117,7 @@
             
             const autocomplete = new google.maps.places.Autocomplete(input, options);
             autocomplete.setFields(["place_id", "geometry", "name"]);
-            autocomplete.addListener("place_changed", () => {
+            autocomplete.addListener("place_changed", async () => {
                 const place = autocomplete.getPlace()
 
                 let extent: Extent = [place.geometry?.viewport.getSouthWest().lng()!,
@@ -103,17 +147,9 @@
                     geometry: markerGeometry
                 });
 
-
-                var vectorSource1 = new VectorSource({
-                    features: [poly, markerFeature]
-                });
-
-                var vectorLayer1: VectorLayer<any> = new VectorLayer({
-                    source: vectorSource1
-                });
-
-                map.addLayer(vectorLayer1 as any); 
-                console.log(map.getView().calculateExtent(map.getSize()))
+               
+                let retrieveFeatures = await queryPropertiesFromView(map)
+                vectorSource1.addFeatures([poly, markerFeature, ...retrieveFeatures])
             })
             
         }
@@ -121,4 +157,11 @@
         document.head.appendChild(mapsScript);
     })
 
+    // const { data, pending, error, refresh } = await useFetch('https://xzdo7h9g8c.execute-api.us-east-1.amazonaws.com/dev/get_properties', {
+    //     headers: {
+    //         'x-api-key': 'IQCzLPuwx27iDJAS1R6XW6LCaUmDeGPp6DUgyA5e'
+    //     }   
+    // })
+
+    // console.log((data.value as Array<any>)[0].username)
 </script>

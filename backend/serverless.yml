@@ -8,11 +8,22 @@ provider:
   stage: ${opt:stage, 'dev'}
   runtime: nodejs18.x
   apiName: backend-${self:provider.stage}
+  environment:
+    DB_USERNAME: ${file(./config.json):${self:provider.stage}.DB_USERNAME}
+    DB_PASSWORD: ${file(./config.json):${self:provider.stage}.DB_PASSWORD}
+    DB_HOST: ${file(./config.json):${self:provider.stage}.DB_HOST}
+    DB_NAME: ${file(./config.json):${self:provider.stage}.DB_NAME}
+    DB_TABLE: ${file(./config.json):${self:provider.stage}.DB_TABLE}
 
 functions:
   api:
     handler: index.handler
     events:
       - http:
-          path: /
+          path: /get_properties/{polygon}
           method: get
+          cors: true
+          request:
+            parameters:
+              paths:
+                polygon: true
