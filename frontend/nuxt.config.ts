@@ -10,5 +10,12 @@ export default defineNuxtConfig({
       dev_endpoint: process.env.DEV_ENDPOINT,
       aws_api_key: process.env.AWS_API_KEY
     }
-  }
+  },
+  css: [
+      'bootstrap/dist/css/bootstrap.min.css'
+  ],
+  plugins: [
+      '~/plugins/useBootstrap.client.ts'
+      // '~/plugins/veevalidate-components.ts'
+  ]
 })

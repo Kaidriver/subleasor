@@ -1,57 +1,41 @@
 <template>
-    <h1>hello</h1>
+    <div class = "container">
+        <h1>hello</h1>
 
-    <input type="text" id="pac-input">
-    <ol-map id="map" ref="mapRef" :loadTilesWhileAnimating="true" :loadTilesWhileInteracting="true" style="height:400px">
-        <ol-view :center="center" :rotation="rotation" :zoom="zoom"
-        :projection="projection" />
-        <ol-tile-layer>
-            <ol-source-osm />
-        </ol-tile-layer>
-    </ol-map>   
-    <div id="popup" class="ol-popup">
-      <a href="#" id="popup-closer" class="ol-popup-closer"></a>
-      <div id="popup-content"></div>
+        <input type="text" id="pac-input">
+
+        <div class = "row">
+
+            <div class = "col-md-6">
+
+                <ol-map id="map" ref="mapRef" :loadTilesWhileAnimating="true" :loadTilesWhileInteracting="true" style="height:400px">
+                    <ol-view :center="center" :rotation="rotation" :zoom="zoom"
+                    :projection="projection" />
+                    <ol-tile-layer>
+                        <ol-source-osm />
+                    </ol-tile-layer>
+                </ol-map>   
+                <div id="popup" class="ol-popup">
+                    <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+                    <div id="popup-content"></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h1>Properties</h1>
+                <div class="flexbox">
+                    <div class="property-info" v-for="(property, index) in propertiesList">
+                        <h3>{{ property.street + " " + (property.street2 == null ? "" : property.street2 + " ") + ", " + property.city + " " + property.st + ", " + property.postal }}</h3>
+                        <h5>{{ property.username }}</h5>
+                        <h5>{{ property.post_date}} </h5>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
     </div>
+    
 </template>
 
-<style scoped>
-    #map {
-        width: 50%;
-    }
-    .ol-popup {
-        position: absolute;
-        background-color: white;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #cccccc;
-        bottom: 12px;
-        left: -50px;
-        min-width: 280px;
-      }
-      .ol-popup:after, .ol-popup:before {
-        top: 100%;
-        border: solid transparent;
-        content: " ";
-        height: 0;
-        width: 0;
-        position: absolute;
-        pointer-events: none;
-      }
-      .ol-popup:after {
-        border-top-color: white;
-        border-width: 10px;
-        left: 48px;
-        margin-left: -10px;
-      }
-      .ol-popup:before {
-        border-top-color: #cccccc;
-        border-width: 11px;
-        left: 48px;
-        margin-left: -11px;
-      }
-</style>
 <script setup lang="ts">
     import 'vue3-openlayers/dist/vue3-openlayers.css';
     
@@ -66,6 +50,7 @@
     import GeoJSON from 'ol/format/GeoJSON.js'; 
     import { ref } from 'vue'
     import type { Extent, Map } from 'openlayers';
+import { isPropertyAccessChain } from 'typescript';
 
     const center = ref([40, 40])
     const projection = ref('EPSG:4326')
@@ -73,6 +58,10 @@
     const rotation = ref(0)
     const mapRef = ref<{ map: Map }>();
     const config = useRuntimeConfig()
+    const propertiesList = ref<Property[]>([])
+    let vectorLayer1: VectorLayer<any>;
+    let vectorLayerSingle: VectorLayer<any>;
+    let vectorSourceSingle: VectorSource;
 
     async function queryPropertiesFromView(map: Map) {
         const queryExtent = map.getView().calculateExtent(map.getSize())
@@ -90,6 +79,7 @@
         
 
         let properties = JSON.parse(JSON.stringify(data.value))
+        propertiesList.value = properties
         let featuresList = []
         for (let i = 0; i < properties.length; i++) {
             featuresList.push({'type': 'Feature', 'geometry': JSON.parse(properties[i].geojson), 'properties': {
@@ -127,13 +117,18 @@
         )
         
         const map: Map = mapRef.value?.map!;
-        var vectorSource1 = new VectorSource();
-
-        var vectorLayer1: VectorLayer<any> = new VectorLayer({
+        let vectorSource1 = new VectorSource()
+        vectorSourceSingle = new VectorSource()
+        vectorLayer1= new VectorLayer({
             source: vectorSource1
         });
 
-        map.addLayer(vectorLayer1 as any); 
+        vectorLayerSingle = new VectorLayer({
+            source: vectorSourceSingle
+        });
+
+        map.addLayer(vectorLayer1 as any)
+        map.addLayer(vectorLayerSingle as any)
 
         const overlay = new Overlay({
             element: container,
@@ -187,7 +182,7 @@
                 map.getView().fit(circleExtent.getExtent() as Extent, map.getSize() as any)
                 console.log(extent)
 
-                var poly = new Feature({
+                let poly = new Feature({
                     // geometry: new Polygon([[[place.geometry?.viewport.getSouthWest().lng()!, place.geometry?.viewport.getSouthWest().lat()!], 
                     //                         [place.geometry?.viewport.getSouthWest().lng()!, place.geometry?.viewport.getNorthEast().lat()!],
                     //                         [place.geometry?.viewport.getNorthEast().lng()!, place.geometry?.viewport.getNorthEast().lat()!], 
@@ -195,18 +190,9 @@
                     geometry: circleExtent
                 }); 
                 
-                var markerGeometry = new Point(newCenter);
-                var markerFeature = new Feature({
-                    type: "marker",
-                    geometry: markerGeometry
-                });
-
-                markerFeature.addEventListener('mouseover', () => {
-                    alert("hover!")
-                })
 
                 let retrieveFeatures = await queryPropertiesFromView(map)
-                vectorSource1.addFeatures([poly, markerFeature, ...retrieveFeatures])
+                vectorSource1.addFeatures([poly, ...retrieveFeatures])
                 
 
                 map.on('pointermove', function (e: any) {
@@ -234,6 +220,30 @@
         document.head.appendChild(mapsScript);
     })
 
+    onUpdated(() => {
+        let propertyBoxes = document.querySelectorAll('.property-info')
+        for (let i = 0; i < propertyBoxes.length; i++) {
+            let propertyBox = propertyBoxes[i]
+ 
+            let markerGeometry = new Point(JSON.parse(propertiesList.value[i].geojson).coordinates);
+            let markerFeature = new Feature({
+                type: "marker",
+                geometry: markerGeometry
+            });
+
+            propertyBox.addEventListener('mouseover', () => {
+                vectorLayer1.setVisible(false) 
+                vectorSourceSingle.addFeature(markerFeature)
+                vectorLayerSingle.setVisible(true)
+            })
+
+            propertyBox.addEventListener('mouseout', () => {
+                vectorLayerSingle.setVisible(false)
+                vectorSourceSingle.removeFeature(markerFeature)
+                vectorLayer1.setVisible(true) 
+            })
+        }
+    })
     // const { data, pending, error, refresh } = await useFetch('https://xzdo7h9g8c.execute-api.us-east-1.amazonaws.com/dev/get_properties', {
     //     headers: {
     //         'x-api-key': 'IQCzLPuwx27iDJAS1R6XW6LCaUmDeGPp6DUgyA5e'
@@ -242,3 +252,60 @@
 
     // console.log((data.value as Array<any>)[0].username)
 </script>
+
+<style scoped>
+    #map {
+         
+    }
+
+    .flexbox {
+        display: flex;
+        flex-wrap: wrap;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .property-info {
+        width: 30%;
+        height: 300px;
+        border: 3px black solid;
+        text-wrap: wrap;
+        transition: transform .2s;
+    }
+
+    .property-info:hover {
+        transform: scale(1.2)
+    }
+    .ol-popup {
+        position: absolute;
+        background-color: white;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #cccccc;
+        bottom: 12px;
+        left: -50px;
+        min-width: 280px;
+      }
+      .ol-popup:after, .ol-popup:before {
+        top: 100%;
+        border: solid transparent;
+        content: " ";
+        height: 0;
+        width: 0;
+        position: absolute;
+        pointer-events: none;
+      }
+      .ol-popup:after {
+        border-top-color: white;
+        border-width: 10px;
+        left: 48px;
+        margin-left: -10px;
+      }
+      .ol-popup:before {
+        border-top-color: #cccccc;
+        border-width: 11px;
+        left: 48px;
+        margin-left: -11px;
+      }
+</style>

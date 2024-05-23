@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@types/openlayers": "^4.6.23",
+    "bootstrap": "^5.3.3",
     "nuxt": "^3.11.2",
     "ol": "^9.2.1",
     "ol-contextmenu": "^5.4.0",
@@ -20,6 +21,7 @@
     "vue3-openlayers": "^9.0.1"
   },
   "devDependencies": {
+    "@types/bootstrap": "^5.2.10",
     "@types/googlemaps": "^3.43.3",
     "@types/ol": "^7.0.0",
     "typescript": "^5.4.5",
