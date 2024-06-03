@@ -14,6 +14,8 @@ provider:
     DB_HOST: ${file(./config.json):${self:provider.stage}.DB_HOST}
     DB_NAME: ${file(./config.json):${self:provider.stage}.DB_NAME}
     DB_TABLE: ${file(./config.json):${self:provider.stage}.DB_TABLE}
+    USER_POOL_ID: ${file(./config.json):${self:provider.stage}.USER_POOL_ID}
+    CLIENT_ID: ${file(./config.json):${self:provider.stage}.CLIENT_ID}
 
 functions:
   api:
@@ -27,3 +29,10 @@ functions:
             parameters:
               paths:
                 polygon: true
+  register:
+    handler: register.handler
+    events:
+      - http:
+          path: /register
+          method: post
+          cors: true

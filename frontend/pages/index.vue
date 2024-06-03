@@ -71,7 +71,7 @@ import { isPropertyAccessChain } from 'typescript';
                                             + queryExtent[2] + " " + queryExtent[1] + ", "
                                             + queryExtent[0] + " " + queryExtent[1] + "))")
         
-        const { data, pending, error, refresh } = await useFetch(config.public.dev_endpoint + queryPolygon, {
+        const { data, pending, error, refresh } = await useFetch(config.public.dev_endpoint + "get_properties/" + queryPolygon, {
             headers: {
                 'x-api-key': config.public.aws_api_key
             }   

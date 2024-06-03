@@ -16,6 +16,7 @@
     "ol": "^9.2.1",
     "ol-contextmenu": "^5.4.0",
     "ol-ext": "^4.0.18",
+    "vee-validate": "^4.12.8",
     "vue": "^3.4.27",
     "vue-router": "^4.3.2",
     "vue3-openlayers": "^9.0.1"
