@@ -1,17 +1,11 @@
 <template>
-    <h1>Create Account</h1>
+    <h1>Log in</h1>
     <form @submit="onSubmit">
         <label>Email: </label>
         <input type="email" v-model="email" v-bind="emailAttrs" />
 
         <label>Password: </label>
         <input type="password" v-model="password" v-bind="passwordAttrs" />
-
-        <label>First Name: </label>
-        <input type="text" v-model="firstName" v-bind="firstNameAttrs" />
-
-        <label>Last Name: </label>
-        <input type="text" v-model="lastName" v-bind="lastNameAttrs" />
         <button class="mt-5" >Submit</button>
     </form>
 </template>
@@ -21,15 +15,16 @@ const {values, defineField, handleSubmit} = useForm()
 
 const [email, emailAttrs] = defineField('email')
 const [password, passwordAttrs] = defineField('password')
-const [firstName, firstNameAttrs] = defineField('firstName')
-const [lastName, lastNameAttrs] = defineField('lastName')
 const config = useRuntimeConfig()
 
 const onSubmit = handleSubmit(async (values) => {
-    const { data, pending, error, refresh } = await useFetch(config.public.dev_endpoint + "register", {
+    const { data, pending, error, refresh } = await useFetch(config.public.dev_endpoint + "login", {
         method: "POST",
         body: values
     })
+
+    const tokens = useCookie('tokens')
+    tokens.value = JSON.parse(JSON.stringify(data.value as string))
 });
 </script>
 
